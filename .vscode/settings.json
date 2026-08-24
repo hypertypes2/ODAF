@@ -1,0 +1,13 @@
+{
+    "terminal.integrated.env.windows": {
+        "PATH": "C:\\Users\\HP\\.lupastudio\\venv\\Scripts;${env:PATH}"
+    },
+    "lupastudio.mainBinName": "DQC-SYS_FW",
+    "lupastudio.appOffset": "0x201b9000",
+    "remote.SSH.defaultForwardedPorts": [],
+    "lupastudio.lupaExecutable": "${config:lupastudio.sdkroot}/${config:lupastudio.activeSdk}/out/${config:lupastudio.activeTarget}/${config:lupastudio.mainBinName}.elf",
+    "lupastudio.gdbPath": "C:\\Users\\HP\\.lupastudio\\packages\\toolchain-gccarmnoneeabi\\bin\\arm-none-eabi-gdb.exe",
+    "lupastudio.toolchainPath": "C:\\Users\\HP\\.lupastudio\\packages\\toolchain-gccarmnoneeabi",
+    "lupastudio.sdkroot": "C:\\Users\\HP\\.lupastudio\\sdk",
+    "cortex-debug.openocdPath": "C:\\Users\\HP\\.lupastudio\\sdk\\${config:lupastudio.activeSdk}\\sdk\\openocd\\bin\\openocd_mpu.exe"
+}

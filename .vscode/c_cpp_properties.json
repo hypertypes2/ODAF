@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "LUPA",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${config:lupastudio.sdkroot}/${config:lupastudio.activeSdk}/sdk/include/common/*"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "${config:lupastudio.toolchainPath}/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}
