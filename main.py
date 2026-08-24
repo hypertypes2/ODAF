@@ -15,10 +15,7 @@ for module_name in list(sys.modules.keys()):
     if "pipeline_stages" in module_name:
         importlib.reload(sys.modules[module_name])
 
-# 강제 리로드 세션 확보 후 정상 임포트 가동
-from pipeline_stages.stage0_data_analysis.ui import render_stage0
-from pipeline_stages.stage1_model_design.ui import render_stage1
-from pipeline_stages.stage2_tflite_convert.ui import render_stage2_interface
+# 강제 리로드 세션 확보 후 분기 지연 임포트로 안정 가동
 
 # --------------------------------------------------------------------------
 # 🎛️ 대시보드 마스터 환경 정의
@@ -85,11 +82,13 @@ with st.sidebar:
 # --------------------------------------------------------------------------
 if selected_menu == "📊 Step 0: 데이터 관제 구역":
     st.title("❄️ ODAF 시스템 - 데이터 관제 존")
+    from pipeline_stages.stage0_data_analysis.ui import render_stage0
     render_stage0()
 
 elif selected_menu == "🧠 Step 1: 선행연구 최적화 구역":
     st.title("❄️ ODAF 시스템 - 선행연구 존")
     if s0_done:
+        from pipeline_stages.stage1_model_design.ui import render_stage1
         render_stage1()
     else:
         st.warning("🔒 접근 제한: Step 0 [원천 데이터 무결성 검증] 버튼을 실행하여 노드를 먼저 색칠하십시오.")
@@ -97,6 +96,12 @@ elif selected_menu == "🧠 Step 1: 선행연구 최적화 구역":
 elif selected_menu == "⚙️ Step 2: SW개발 컴파일 구역":
     st.title("❄️ ODAF 시스템 - SW개발 배포 존")
     if s1_done:
-        render_stage2_interface()
+        try:
+            from pipeline_stages.stage2_tflite_convert.ui import render_stage2_interface
+            render_stage2_interface()
+        except Exception as error:
+            st.error("현재 배포 환경에서는 TensorFlow 기반 Step 2를 실행할 수 없습니다.")
+            st.info("Python 3.12 환경에서 실행하거나, Step 2를 별도 서비스로 분리해 주세요.")
+            st.caption(f"detail: {error}")
     else:
         st.warning("🔒 접근 제한: Step 1 선행연구팀 심사 완료 후, 하단 [최종 승인 체크박스]를 체크하여 이관 링크 노드를 개방하십시오.")
