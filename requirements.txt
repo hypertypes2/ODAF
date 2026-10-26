@@ -1,6 +1,7 @@
 streamlit>=1.30.0
 pydantic>=2.0.0
 matplotlib>=3.8.0
+pandas>=2.2.0
 python-dotenv>=1.0.0
 google-genai>=1.0.0
 numpy>=2.1; python_version >= "3.13"

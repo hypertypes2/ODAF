@@ -20,88 +20,96 @@ for module_name in list(sys.modules.keys()):
 # --------------------------------------------------------------------------
 # 🎛️ 대시보드 마스터 환경 정의
 # --------------------------------------------------------------------------
-st.set_page_config(page_title="ODAF 통합 파이프라인", layout="centered")
+st.set_page_config(
+    page_title="ODAF 통합 파이프라인", 
+    layout="wide",
+    page_icon="🚀",
+    initial_sidebar_state="expanded"
+)
 
 # 전사 세션 상태 및 공정 플래그 초기화
 ODAFSessionState.initialize()
+STAGES = ODAFSessionState.stage_definitions()
+
+
+def can_navigate(stage_index: int) -> bool:
+    if stage_index == 1:
+        return True
+    previous_stage_key = f"stage{stage_index - 1}_done"
+    if stage_index == 4 and st.session_state.get("stage3_verified", False):
+        return True
+    return st.session_state.get(previous_stage_key, False)
+
+
+def render_selected_stage(selected_stage: int) -> None:
+    st.title("🚀 ODAF - On-Device AI Flow")
+
+    if selected_stage == 1:
+        st.markdown("### 🧠 Stage 1: Model Design")
+        from pipeline_stages.stage1_model_design.ui import render_stage1
+        render_stage1()
+    elif selected_stage == 2:
+        st.markdown("### ⚙️ Stage 2: TFLite Convert")
+        if can_navigate(2):
+            from pipeline_stages.stage2_tflite_convert.ui import render_stage2_interface
+            render_stage2_interface()
+        else:
+            st.warning("🔒 먼저 Stage 1을 완료해주세요.")
+    elif selected_stage == 3:
+        st.markdown("### 🛰️ Stage 3: LNE Convert + SPIKE Validation")
+        if can_navigate(3):
+            from pipeline_stages.stage3_lne_convert.ui import render_stage3_interface
+            render_stage3_interface()
+        else:
+            st.warning("🔒 먼저 Stage 2를 완료해주세요.")
+    elif selected_stage == 4:
+        st.markdown("### 🧪 Stage 4: Production Simulation")
+        if can_navigate(4):
+            from pipeline_stages.stage4_production_simulation.ui import render_stage4_interface
+            render_stage4_interface()
+        else:
+            st.warning("🔒 먼저 Stage 3을 완료해주세요.")
+    elif selected_stage == 5:
+        st.markdown("### ✅ Stage 5: Executive Sign")
+        if can_navigate(5):
+            from pipeline_stages.stage5_executive_sign.ui import render_stage5_interface
+            render_stage5_interface(session_manager=None)
+        else:
+            st.warning("🔒 먼저 Stage 4를 완료해주세요.")
 
 # --------------------------------------------------------------------------
 # 🛰️ [UI 대개혁] 좌측 사이드바 수직 타임라인 링크 노드 시스템
 # --------------------------------------------------------------------------
 with st.sidebar:
-    st.image("https://icons8.com", width=50)
-    st.title("🛰️ ODAF 관제탑")
-    st.caption("공정 링크를 확인하고 제어 구역으로 진입하십시오.")
+    st.title("🚀 ODAF 관제탑")
+    st.markdown("### **On-Device AI Flow**")
+    st.caption("온디바이스 AI 배포 자동화 파이프라인")
     st.markdown("---")
-    
+
     st.subheader("🏁 파이프라인 링크 트랙")
-    
-    # 각 공정의 내부 진행 규칙 데이터 추출
-    s0_done = st.session_state.get("stage0_done", False)
-    s1_done = st.session_state.get("stage1_approved", False)
-    s2_done = st.session_state.get("stage2_done", False)
-    
-    # 1. 동적 노드(동그라미 마커) 그래픽 상태 연산
-    # 완료 시 완전히 색칠된 노드(🟢), 미완료 시 빈 노드(⚪), 현재 선택 상태(🔹)
-    node_s0 = "🟢" if s0_done else "⚪"
-    node_s1 = "🟢" if s1_done else "⚪"
-    node_s2 = "🟢" if s2_done else "⚪"
-    
-    # 2. 수직 링크 선 표기를 위한 마크다운 렌더링 존
-    # 각 단계의 동그라미 노드 사이를 수직선(⋮) 기호로 이어 흐름을 가시화합니다.
-    st.markdown(f"### {node_s0} Step 0: 데이터 분석")
-    st.markdown("<div style='padding-left: 11px; color: #888; margin-top: -10px; margin-bottom: -10px;'>⋮</div>", unsafe_allow_html=True)
-    
-    st.markdown(f"### {node_s1} Step 1: 제약 조건 검증")
-    st.markdown("<div style='padding-left: 11px; color: #888; margin-top: -10px; margin-bottom: -10px;'>⋮</div>", unsafe_allow_html=True)
-    
-    st.markdown(f"### {node_s2} Step 2: TFLite 벤치마크")
-    
+    for stage in STAGES:
+        stage_done = st.session_state.get(f"{stage['key']}_done", False)
+        if stage["index"] == 5:
+            stage_done = stage_done or st.session_state.get("pipeline_complete", False)
+        node = "🟢" if stage_done else "⚪"
+        button_label = f"{node} Stage {stage['index']}: {stage['title']}"
+        if st.button(
+            button_label,
+            key=f"nav_{stage['key']}",
+            width="stretch",
+            disabled=not can_navigate(stage["index"]),
+        ):
+            ODAFSessionState.set_selected_stage(stage["index"])
+
+        if stage["index"] != STAGES[-1]["index"]:
+            st.markdown("<div style='padding-left: 11px; color: #888; margin-top: -10px; margin-bottom: -10px;'>⋮</div>", unsafe_allow_html=True)
+
     st.markdown("---")
-    st.subheader("⚙️ 관제 구역 강제 진입 선택")
-    
-    # 실제 화면 분기를 누르기 위한 내비게이션 드롭다운 메뉴 매핑
-    menu_options = [
-        "📊 Step 0: 데이터 관제 구역",
-        "🧠 Step 1: 선행연구 최적화 구역",
-        "⚙️ Step 2: SW개발 컴파일 구역"
-    ]
-    
-    selected_menu = st.selectbox(
-        "이동할 배포 공정 선택",
-        options=menu_options,
-        index=0,
-        help="상단의 타임라인 노드 색칠 현황을 확인한 후 적절한 작업 구역을 지정하십시오."
-    )
-    
-    st.markdown("---")
-    st.caption("On-Device 배포 규격화 가이드 v4.8")
+    st.caption("💡 **Tip**: 위 버튼을 클릭하여 각 단계로 이동하세요")
+    st.caption("On-Device AI Flow v2.0")
 
 # --------------------------------------------------------------------------
-# 🔄 [화면 분기 제어] 사이드바 맵 및 셀렉터 클릭에 따른 공정 화면 출력
+# 🔄 [화면 분기 제어] 사이드바 버튼 클릭에 따른 공정 화면 출력
 # --------------------------------------------------------------------------
-if selected_menu == "📊 Step 0: 데이터 관제 구역":
-    st.title("❄️ ODAF 시스템 - 데이터 관제 존")
-    from pipeline_stages.stage0_data_analysis.ui import render_stage0
-    render_stage0()
-
-elif selected_menu == "🧠 Step 1: 선행연구 최적화 구역":
-    st.title("❄️ ODAF 시스템 - 선행연구 존")
-    if s0_done:
-        from pipeline_stages.stage1_model_design.ui import render_stage1
-        render_stage1()
-    else:
-        st.warning("🔒 접근 제한: Step 0 [원천 데이터 무결성 검증] 버튼을 실행하여 노드를 먼저 색칠하십시오.")
-
-elif selected_menu == "⚙️ Step 2: SW개발 컴파일 구역":
-    st.title("❄️ ODAF 시스템 - SW개발 배포 존")
-    if s1_done:
-        try:
-            from pipeline_stages.stage2_tflite_convert.ui import render_stage2_interface
-            render_stage2_interface()
-        except Exception as error:
-            st.error("현재 배포 환경에서는 TensorFlow 기반 Step 2를 실행할 수 없습니다.")
-            st.info("Python 3.12 환경에서 실행하거나, Step 2를 별도 서비스로 분리해 주세요.")
-            st.caption(f"detail: {error}")
-    else:
-        st.warning("🔒 접근 제한: Step 1 선행연구팀 심사 완료 후, 하단 [최종 승인 체크박스]를 체크하여 이관 링크 노드를 개방하십시오.")
+selected_stage = st.session_state.get("selected_stage", 1)
+render_selected_stage(selected_stage)
